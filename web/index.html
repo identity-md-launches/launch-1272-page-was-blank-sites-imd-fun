@@ -3,16 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src https: wss: http://127.0.0.1:8545 http://localhost:8545; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src https: wss: http://127.0.0.1:8545 http://localhost:8545; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="referrer" content="no-referrer" />
 <title>PepesFamily</title>
-<link rel="icon" href="/favicon.ico" sizes="32x32" />
-<link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
-<link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="description" content="Launch and trade tokens on Robinhood Chain and Ethereum. Claim holder rewards through your own browser wallet." />
+<meta property="og:title" content="PepesFamily" />
+<meta property="og:description" content="Launch and trade tokens on Robinhood Chain and Ethereum. Claim holder rewards through your own browser wallet." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="./earn-preview.jpg" />
+<meta property="og:image:alt" content="Pepes Earn IMD characters from PepesFamily" />
+<link rel="icon" href="./favicon.ico" sizes="32x32" />
+<link rel="icon" type="image/png" href="./favicon-32.png" sizes="32x32" />
+<link rel="icon" type="image/png" href="./icon-192.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js" integrity="sha512-V3xRGsQMQ8CG4l2gVN44TCDmNY5cdlxbSvejrgmWxcLKHft0Q3XQDbeuJ9aot14mpNuRWGtI//WKraedDGNZ+g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="./vendor/ethers.umd.min.js" integrity="sha512-V3xRGsQMQ8CG4l2gVN44TCDmNY5cdlxbSvejrgmWxcLKHft0Q3XQDbeuJ9aot14mpNuRWGtI//WKraedDGNZ+g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="./share-image.js"></script>
 <script>
   // theme before first paint: saved choice, else the system setting
   try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
@@ -60,7 +67,7 @@ nav.top a.on { background: var(--strong); color: var(--inv); }
 .spacer { flex: 1; }
 #connect { white-space: nowrap; }
 button.icon { border: 0; background: none; color: var(--text); font-size: 15px; padding: 6px; cursor: pointer; }
-@media (max-width: 600px) {
+@media (max-width: 860px) {
   /* phones: logo, theme and wallet on the first row; the tabs get their own full-width row below */
   header .wrap { gap: 8px; flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 8px; }
   nav.top { order: 3; width: 100%; overflow-x: auto; justify-content: space-between; }
@@ -94,13 +101,19 @@ button:disabled { opacity: .35; cursor: not-allowed; }
 input, textarea {
   font: inherit; width: 100%; padding: 10px 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
 }
-input:focus, textarea:focus { outline: none; border-color: var(--strong); }
+input:focus, textarea:focus { border-color: var(--strong); }
+:focus-visible { outline: 2px solid var(--strong); outline-offset: 3px; }
+.screen :focus-visible { outline-color: #3ddc84; }
 textarea { min-height: 90px; resize: vertical; }
 label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
 
 /* layout */
 main { padding: 30px 0 60px; }
 h1 { font-weight: 400; font-size: 30px; letter-spacing: -.01em; margin: 0; }
+@media (max-width: 600px) {
+  h1 { font-size: 24px; }
+  input, textarea, select { font-size: 16px; }
+}
 h2 { font-weight: 500; font-size: 20px; margin: 0; }
 h3 { font-weight: 500; font-size: 14px; }
 .hero { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; margin-bottom: 26px; }
@@ -181,7 +194,7 @@ th { color: var(--muted); font-weight: 400; text-transform: uppercase; letter-sp
 .official .ca { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; }
 .official .ca code { font-family: inherit; color: var(--muted); word-break: break-all; }
 .official .ca button { padding: 2px 8px; font-size: 11px; }
-.sortbar { display: flex; align-items: center; gap: 10px; margin: -4px 0 12px; }
+.sortbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -4px 0 12px; }
 .imgrow { display: flex; gap: 12px; align-items: flex-start; }
 .imgprev { width: 60px; height: 60px; flex: none; border: 1px dashed var(--line); display: grid; place-items: center; color: var(--dim); overflow: hidden; }
 .imgprev img { width: 100%; height: 100%; object-fit: cover; }
@@ -248,12 +261,12 @@ th { color: var(--muted); font-weight: 400; text-transform: uppercase; letter-sp
 <header>
   <div class="wrap">
     <a class="logo" href="#/" aria-label="PepesFamily home"><span class="mk">P</span><span class="nm">PEPESFAMILY</span></a>
-    <nav class="top">
+    <nav class="top" aria-label="Main navigation">
       <a href="#/" data-nav="/">Tokens</a>
       <a href="#/create" data-nav="/create">Launch</a>
       <a href="#/rewards" data-nav="/rewards">Rewards</a>
       <a href="#/nft" data-nav="/nft"><span class="nl">Pepes Earn IMD </span>NFT</a>
-      <a href="/world/">World</a>
+      <a href="./world/">World</a>
       <a href="#/admin" data-nav="/admin" id="adminlink" style="display:none">Admin</a>
     </nav>
     <span class="spacer"></span>
@@ -262,7 +275,7 @@ th { color: var(--muted); font-weight: 400; text-transform: uppercase; letter-sp
   </div>
 </header>
 <main class="wrap" id="app"></main>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <footer class="status">
   <span><b id="sb-vol">…</b> volume</span>
   <span><b id="sb-hold">…</b> paid to holders</span>
@@ -313,7 +326,7 @@ const CONFIG = {
   // Images shown instead of a token's on-chain metadata image (token address in lower case -> path on this site).
   // v1 tokens can't change their metadata; $PEPES launched without an image.
   images: {
-    "0xe2c46c7068566740a33a4c93f5445b07bcfe5644": "/pepes.jpg",
+    "0xe2c46c7068566740a33a4c93f5445b07bcfe5644": "./pepes.jpg",
   },
   // Independent audits by the IMD Swarm (reports are public on explorer.imd.fun).
   audits: {
@@ -1208,6 +1221,11 @@ const Feed = (() => {
 async function renderHome() {
   const app = $("#app");
   app.innerHTML = `
+    <div class="hero">
+      <div><h1>Launch a token</h1>
+      <p>A token launchpad on Robinhood Chain and Ethereum.</p>
+      <div class="row" style="margin-top:16px"><a class="btn primary" href="#/create">Launch a token</a><a class="btn" href="https://github.com/0xtenang/PepesFamily" target="_blank" rel="noopener noreferrer">Verified source ↗</a></div></div>
+    </div>
     <div id="official"></div>
     <div id="koth"></div>
     <div class="scene" id="scene">
@@ -1218,11 +1236,6 @@ async function renderHome() {
         <a class="scr-input" href="#/create">&gt; <span class="cur">▌</span> launch a token</a>
       </div>
       <div class="crowd" aria-hidden="true"></div>
-    </div>
-    <div class="hero">
-      <div><h1>Launch a token on Robinhood Chain or Ethereum</h1>
-      <p>1B fixed supply · liquidity locked forever · paired with $IMD · 3% of every trade paid to holders in IMD</p>
-      <div class="row" style="margin-top:16px"><a class="btn primary" href="#/create">Launch a token</a><a class="btn" href="https://github.com/0xtenang/PepesFamily" target="_blank" rel="noopener noreferrer">Verified source ↗</a></div></div>
     </div>
     ${sec(1, "Platform")}
     <div class="stats" id="totals" style="margin:0">
@@ -1860,7 +1873,7 @@ async function renderRewards(who) {
     }
     if (mySeq !== cardSeq || seq !== rewardsSeq || !$("#card")) return;
     $("#card").src = url;
-    const blob = () => fetch(url).then((x) => x.blob());
+    const blob = () => shareImageBlob(url);
     $("#sx").onclick = () => window.open("https://x.com/intent/tweet?text=" + encodeURIComponent(text), "_blank", "noopener,noreferrer");
     $("#sdl").onclick = () => { const a = document.createElement("a"); a.href = url; a.download = file; a.click(); };
     if ($("#scp")) $("#scp").onclick = async () => {
@@ -2060,7 +2073,7 @@ function renderNftPreview() {
     <div class="card" style="margin-bottom:14px"><span class="h">Coming soon</span>
       <p class="stat" style="margin:0">Audited by IMD Swarm; opening once the audit fixes are done and re-checked. Here's what the collection looks like: every image is drawn on-chain.</p></div>
     ${nftAuditCard("margin-bottom:14px")}
-    <img class="share-img" src="/earn-preview.jpg" alt="Sample Pepes Earn IMD NFTs" style="aspect-ratio:auto;max-width:900px">
+    <img class="share-img" src="./earn-preview.jpg" alt="Sample Pepes Earn IMD NFTs" style="aspect-ratio:auto;max-width:900px">
     ${nftHowItWorks(1)}`;
 }
 

@@ -1,0 +1,27 @@
+{
+  "lockfileVersion": 1,
+  "dependencies": [
+    {
+      "name": "ethers",
+      "version": "6.13.4",
+      "file": "ethers.umd.min.js",
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js",
+      "integrity": "sha512-V3xRGsQMQ8CG4l2gVN44TCDmNY5cdlxbSvejrgmWxcLKHft0Q3XQDbeuJ9aot14mpNuRWGtI//WKraedDGNZ+g==",
+      "bytes": 505826,
+      "license": "MIT",
+      "licenseFile": "ethers.LICENSE",
+      "licenseUrl": "https://raw.githubusercontent.com/ethers-io/ethers.js/v6.13.4/LICENSE.md"
+    },
+    {
+      "name": "three",
+      "version": "0.160.0",
+      "file": "three.min.js",
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js",
+      "integrity": "sha512-vnmn/Qqn6aG0POAc9mIGzjq0IybrvxJXYDafNvp9JSnDGxeF3pbkSqLvf+YGd5ku63pT7sa/jxHn7/d0mU8+tA==",
+      "bytes": 669884,
+      "license": "MIT",
+      "licenseFile": "three.LICENSE",
+      "licenseUrl": "https://raw.githubusercontent.com/mrdoob/three.js/r160/LICENSE"
+    }
+  ]
+}

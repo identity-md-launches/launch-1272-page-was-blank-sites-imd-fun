@@ -237,6 +237,50 @@ Every launch deploys a new `PadToken` contract, and scanners such as DexScreener
 
 ## Website
 
+### Static site: install, preview and rebuild
+
+The frontend is plain HTML/JavaScript in `web/`. Use **Node.js 20 or newer** for the build/check scripts. There is no frontend package installation step: the required browser libraries are already included. Do not run `npm install` in the repository or generate a root `package-lock.json`.
+
+```bash
+node scripts/build.mjs
+python3 -m http.server 8080 --directory dist
+```
+
+Open `http://localhost:8080/` and `http://localhost:8080/world/`. Stop the preview with Ctrl+C. `node scripts/build.mjs` executes the existing `package.json` build command unchanged; `npm run build` is equivalent if npm is installed. It replaces `dist/` with `web/`, excluding `api/` and `vercel.json`. After editing source, rebuild and include the complete `dist/` export in the submission. No contract build is needed for a website-only edit.
+
+ethers **6.13.4** and three.js **0.160.0** are served from `web/vendor/` and copied into `dist/vendor/`. Both files are byte-identical to their original cdnjs downloads and retain the original SHA-512 SRI attributes. [The runtime dependency lockfile](web/vendor/dependencies.lock.json) records versions, source URLs, hashes and byte lengths; adjacent MIT license files must travel with them. This lockfile replaces the need for an npm dependency tree for this static site. Google Fonts remains optional; the existing system font fallback works without it.
+
+### Publish
+
+Publish **the contents of `dist/`**, including `vendor/`, `share-image.js`, images/icons and `world/index.html`. IMD serves the committed export without rebuilding. The continuation targets the existing site name `pepesfamily.site.identitymd.eth`; publishing a new version does not deploy any contract. No on-chain deployment or site publication was performed by this repair.
+
+Local assets and links are relative, so the site also works at a gateway subpath such as `/preview/`. Keep directory index serving for `world/`; all launchpad views use hash routes and require no SPA rewrite. Use HTTPS for wallet/clipboard/share APIs. Both HTML policies now permit same-origin scripts and no longer depend on a CDN script allowlist. The application still contains inline scripts, so a host policy must also allow those (the existing `'unsafe-inline'` allowance or matching hashes); a literal `script-src 'self'` with no inline allowance is insufficient. Do not add `data:` to `connect-src`: share-card PNGs are decoded locally.
+
+The static export has no upload backend or credentials. The optional existing Vercel upload integration below remains separate; its capability probe is blocked by CSP on an HTTP local preview and unavailable on a purely static host. Creators can still paste image links.
+
+### Checks and actual results
+
+```bash
+node --test scripts/check-site.test.mjs
+npx --yes --package typescript@5.9.3 tsc --noEmit --allowJs --checkJs --strict --target ES2022 --lib ES2022,DOM web/share-image.js
+```
+
+TypeScript is only a checking tool here. The strict check covers the changed PNG conversion helper; the integrity suite syntax-checks both pages' existing inline JavaScript. The legacy untyped application has not been migrated to TypeScript or fully typechecked. The worker used a TypeScript 5.9.3 compiler unpacked under `/tmp` and ran that same `tsc` command through Node, because npm was absent.
+
+For the browser suite, install Playwright Core **1.56.1** and its Chromium browser outside this repository, then pass the module entry point:
+
+```bash
+node scripts/check-browser.mjs /absolute/path/to/playwright-core/index.mjs
+```
+
+The script owns and closes its local server/browser, serves `dist/` under `/preview/`, applies a host CSP that denies CDN scripts, and writes evidence under `artifacts/`. It uses labeled RPC fixtures and never injects a wallet or submits transactions. An optional module argument is unnecessary if `playwright-core` is already resolvable from the environment. Browser prerequisites must be installed for the local operating system.
+
+Worker results on 2026-10-10: **production build passed; strict helper typecheck passed; 7/7 integrity/PNG checks passed; 15/15 browser check groups passed** using Chromium 141.0.7390.37. PNG download and the real Chromium clipboard were exercised; native Share was checked with a stub that records the generated File and text. Home reflow was checked from 320 to 1440px, including 390px with the primary action on the first screen. World rendered its WebGL scene and its no-wallet gate. No page exceptions or failed local assets occurred. The optional HTTP upload probe and the unchanged three.js deprecation warning remain documented console messages.
+
+The pinned Better Interface guide was applied across accessibility, layout, writing, typography, colors and UI. Applicable fixes include relative assets, link metadata, visible keyboard focus, a polite feedback region, mobile input sizing, wrapping filters/header and the first-screen launch action. [DESIGN.md](DESIGN.md) describes the actual implementation; [the validation report](docs/validation.md) records source locations, measured contrast, coverage and remaining limitations. Browser evidence is delivered separately in `artifacts/`. Wallet signing/trading/claims, physical devices, screen readers, native share sheets and a broad contract/security audit were not tested in this frontend repair.
+
+### Existing deployment and optional upload configuration
+
 Add each launchpad version's `pad`, `router` and `ethRouter` (from `contracts/deployments/robinhood*.json`) to `CONFIG.pads` at the top of `web/index.html`, then host the file on any static host. For production, point `CONFIG.rpc` at a paid RPC; the public endpoint is rate-limited.
 
 Image upload on the launch form uses the Vercel function `web/api/upload.js`, which pins images to IPFS through Pinata. Set the environment variable `PINATA_JWT` (a Pinata API key JWT with permission to upload files) in the Vercel project; the key never reaches the browser. Without it the Upload button stays hidden and creators paste image links instead.

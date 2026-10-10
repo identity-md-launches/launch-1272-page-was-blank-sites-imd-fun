@@ -3,17 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data: blob:; connect-src https: wss:; base-uri 'none'; form-action 'none'; object-src 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data: blob:; connect-src https: wss:; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <meta name="referrer" content="no-referrer" />
 <title>Pepes World</title>
+<meta property="og:title" content="Pepes World" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="../earn-preview.jpg" />
+<meta property="og:image:alt" content="Pepes Earn IMD characters" />
 <meta name="description" content="Deliver letters around a tiny Pepe planet. Your Pepes Earn IMD NFT is your character." />
-<link rel="icon" href="/favicon.ico" sizes="32x32" />
-<link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="icon" href="../favicon.ico" sizes="32x32" />
+<link rel="icon" type="image/png" href="../favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="../apple-touch-icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js" integrity="sha512-V3xRGsQMQ8CG4l2gVN44TCDmNY5cdlxbSvejrgmWxcLKHft0Q3XQDbeuJ9aot14mpNuRWGtI//WKraedDGNZ+g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js" integrity="sha512-vnmn/Qqn6aG0POAc9mIGzjq0IybrvxJXYDafNvp9JSnDGxeF3pbkSqLvf+YGd5ku63pT7sa/jxHn7/d0mU8+tA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="../vendor/ethers.umd.min.js" integrity="sha512-V3xRGsQMQ8CG4l2gVN44TCDmNY5cdlxbSvejrgmWxcLKHft0Q3XQDbeuJ9aot14mpNuRWGtI//WKraedDGNZ+g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="../vendor/three.min.js" integrity="sha512-vnmn/Qqn6aG0POAc9mIGzjq0IybrvxJXYDafNvp9JSnDGxeF3pbkSqLvf+YGd5ku63pT7sa/jxHn7/d0mU8+tA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 :root {
   --sky: #a8dcc9; --ink: #000000; --paper: #ffffff; --muted: #666666; --line: #dcdcdc;
@@ -85,7 +89,7 @@ h1 { font-size: 26px; margin: 16px 0 4px; letter-spacing: .02em; }
 
 <div id="hud" hidden>
   <div class="hud-top">
-    <a class="logo" href="/" aria-label="PepesFamily home"><span class="mk">P</span><span class="nm">PEPES WORLD</span></a>
+    <a class="logo" href="../" aria-label="PepesFamily home"><span class="mk">P</span><span class="nm">PEPES WORLD</span></a>
     <div class="stats box"><span title="Letters delivered today">📬 <b id="h-today">0</b>/<span id="h-goal">10</span></span><span title="IMD letters delivered today">✨ <b id="h-gold">0</b></span><span title="Days in a row">🔥 <b id="h-streak">0</b>d</span></div>
   </div>
   <div id="compass" class="box"><span id="arrow">▲</span><span id="target">Go to Pepes Post</span></div>
@@ -759,7 +763,7 @@ async function ensureChain() {
   }
 }
 
-const HEAD = `<a class="logo" href="/" aria-label="PepesFamily home"><span class="mk">P</span><span class="nm">PEPESFAMILY</span></a>
+const HEAD = `<a class="logo" href="../" aria-label="PepesFamily home"><span class="mk">P</span><span class="nm">PEPESFAMILY</span></a>
   <h1>Pepes World 🐸</h1>`;
 function gate(html) { $("#gate").hidden = false; $("#gatecard").innerHTML = html; }
 
@@ -812,10 +816,10 @@ async function locked(vault, err) {
     <p class="sub">This wallet can't play yet. Choose a way in:</p>
     <div class="opt"><b>🐸 Hold 1 Pepes Earn IMD NFT</b>
       <p>Buy 1 $EARN and the NFT lands in your wallet. Play as your own Pepe, and earn 3% of every $EARN trade in IMD.</p>
-      <a class="btn primary" href="/#/nft" style="width:100%">Get a Pepes Earn IMD NFT</a></div>
+      <a class="btn primary" href="../#/nft" style="width:100%">Get a Pepes Earn IMD NFT</a></div>
     <div class="opt"><b>🎟️ Pepes World pass</b>
       ${vault ? `<p>A one-time deposit of ${fmt(price)} $PEPES to the Pepes World vault (<a href="${CONFIG.vaultAudit}" target="_blank" rel="noopener">audited ↗</a>). Not refundable, and the pass never expires. You hold ${fmt(pepesBal)} $PEPES.</p>
-        ${enough ? `<button class="btn" id="enter" style="width:100%">Enter with ${fmt(price)} $PEPES</button>` : `<a class="btn" href="/#/t/${CONFIG.pepes}" style="width:100%">Get $PEPES</a>`}`
+        ${enough ? `<button class="btn" id="enter" style="width:100%">Enter with ${fmt(price)} $PEPES</button>` : `<a class="btn" href="../#/t/${CONFIG.pepes}" style="width:100%">Get $PEPES</a>`}`
         : `<p>Coming soon: a one-time 100,000 $PEPES entry.</p>`}</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="recheck">I got one, check again</button></div>
     ${err ? `<p class="err">${esc(err)}</p>` : ""}`);
