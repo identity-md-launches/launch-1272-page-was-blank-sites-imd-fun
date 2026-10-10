@@ -135,12 +135,29 @@ h3 { font-weight: 500; font-size: 14px; }
 .avatar.lg { width: 88px; height: 88px; }
 .tcard .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pill { font-size: 10px; letter-spacing: .08em; padding: 1px 6px; border: 1px solid currentColor; text-transform: uppercase; }
-.pill.eth { color: var(--text); } .pill.imd { color: var(--muted); } .pill.chain { color: var(--accent); }
+.pill.eth { color: var(--text); } .pill.imd { color: var(--muted); } .pill.chain { color: var(--text); }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .stat { font-size: 12px; color: var(--muted); }
 .stat b { color: var(--text); font-weight: 500; }
 .two { display: grid; grid-template-columns: 1fr 360px; gap: 18px; align-items: start; }
 @media (max-width: 860px) { .two { grid-template-columns: 1fr; } }
+.token-layout { grid-template-areas: "identity trade" "details trade"; row-gap: 0; }
+.token-identity { grid-area: identity; }
+.token-details { grid-area: details; min-width: 0; }
+.mobile-token-about { display: none; }
+.trade-panel { grid-area: trade; min-width: 0; }
+.nft-layout { grid-template-areas: "stats stats" "collection trade"; row-gap: 0; }
+.nft-stats { grid-area: stats; }
+.nft-collection { grid-area: collection; min-width: 0; }
+.nft-trade { margin-top: 26px; }
+@media (max-width: 860px) {
+  .token-layout { grid-template-areas: "identity" "trade" "details"; row-gap: 16px; }
+  .token-details > .stats { margin-top: 0; }
+  .token-identity .token-meta, .token-identity > .desc { display: none; }
+  .mobile-token-about { display: block; margin-bottom: 16px; }
+  .nft-layout { grid-template-areas: "trade" "stats" "collection"; row-gap: 16px; }
+  .nft-trade { margin-top: 0; }
+}
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; margin-top: 16px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
 .stats .card { padding: 14px 16px; border-top: 0; border-left: 0; }
 .stats.q { grid-template-columns: repeat(2, 1fr); }
@@ -213,6 +230,9 @@ th { color: var(--muted); font-weight: 400; text-transform: uppercase; letter-sp
 /* bottom status bar */
 .modal { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, .6); display: grid; place-items: center; }
 .modal .card { width: min(340px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 8px; }
+dialog.modal { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; color: var(--text); }
+dialog.modal::backdrop { background: rgba(0, 0, 0, .6); }
+dialog.modal .card { overscroll-behavior: contain; }
 .wopt { display: flex; align-items: center; gap: 10px; text-align: left; text-transform: none; letter-spacing: 0; font-size: 13px; }
 .wopt img { width: 22px; height: 22px; }
 .status { position: fixed; left: 0; right: 0; bottom: 0; height: 40px; z-index: 6; background: var(--bg); border-top: 1px solid var(--line);
@@ -231,7 +251,7 @@ th { color: var(--muted); font-weight: 400; text-transform: uppercase; letter-sp
 .scr-head b { color: #3ddc84; font-weight: 500; }
 .scr-head .pulse { color: #3ddc84; animation: blink 2s steps(1) infinite; }
 .scr-log { flex: 1; overflow: hidden; padding: 6px 12px; display: flex; flex-direction: column; justify-content: flex-end; }
-.scr-log .ln { display: grid; grid-template-columns: 12px 44px 50px minmax(72px, max-content) 1fr; gap: 8px; white-space: nowrap; line-height: 1.8; color: #8e9b8e; }
+.scr-log .ln { display: grid; grid-template-columns: 12px 44px 50px minmax(72px, max-content) 1fr; gap: 8px; white-space: nowrap; line-height: 1.8; min-height: 24px; flex-shrink: 0; align-items: center; color: #8e9b8e; }
 .scr-log a.ln:hover { background: #0e170e; }
 .scr-log .ln > span { overflow: hidden; text-overflow: ellipsis; }
 .scr-log .gt { color: #3ddc84; }
@@ -587,10 +607,10 @@ let padR = null;   // LAUNCH's contract (launch form + admin owner lookups)
 const LAUNCHES = {}; // chain key -> newest live launchpad there
 async function loadPads() {
   await Promise.all(PADS.map(async (P) => {
-    try {
-      const [a, b] = await Promise.all([P.ch.reader.getCode(P.pad), P.ch.reader.getCode(P.ethRouter)]);
-      P.live = a.length > 2; P.ethLive = b.length > 2;
-    } catch {}
+    const [pad, router] = await Promise.allSettled([P.ch.reader.getCode(P.pad), P.ch.reader.getCode(P.ethRouter)]);
+    P.codeError = pad.status === "rejected";
+    P.live = pad.status === "fulfilled" && pad.value.length > 2;
+    P.ethLive = router.status === "fulfilled" && router.value.length > 2;
   }));
   for (const P of PADS) if (P.live && !P.nft && !LAUNCHES[P.ch.key]) LAUNCHES[P.ch.key] = P;
   LAUNCH = LAUNCHES.robinhood || PADS.find((P) => P.live && !P.nft) || null;
@@ -927,7 +947,9 @@ $("#theme").onclick = () => {
   try { localStorage.setItem("theme", next); } catch {}
 };
 
+let routeGeneration = 0;
 function route() {
+  ++routeGeneration;
   const h = location.hash.slice(1) || "/";
   const navKey = h.startsWith("/t/") ? "/" : h.startsWith("/rewards") ? "/rewards" : h;
   document.querySelectorAll("nav.top a").forEach((a) => a.classList.toggle("on", a.dataset.nav === navKey));
@@ -942,6 +964,12 @@ function route() {
 }
 
 function renderSetup() {
+  if (PADS.some((P) => !P.nft && P.codeError)) {
+    $("#app").innerHTML = `<div class="card empty"><h2>Could not reach the chain</h2>
+      <p>Could not reach the chain. Reload to try again.</p><button type="button" id="reload">Reload</button></div>`;
+    $("#reload").onclick = () => location.reload();
+    return;
+  }
   $("#app").innerHTML = `<div class="card empty"><h2>Not deployed yet</h2>
     <p>No launchpad contract found on-chain. Check <span class="mono">CONFIG.pads</span> and <span class="mono">CONFIG.rpc</span> at the top of this file.</p></div>`;
 }
@@ -1150,7 +1178,7 @@ const Scene = (() => {
 
 /// Live terminal: recent launches and trades across every launchpad version, polled every 20 s.
 const Feed = (() => {
-  let timer = 0, seen = new Set(), tokens = new Map();
+  let timer = 0, seen = new Set(), tokens = new Map(), resizeObserver = null;
   const hhmm = (sec) => new Date(sec * 1000).toTimeString().slice(0, 5);
 
   async function loadTokens() {
@@ -1191,6 +1219,18 @@ const Feed = (() => {
     return `<a class="ln${fresh ? " new" : ""}" href="#/t/${t.token}"><span class="gt">&gt;</span><span>${hhmm(e.ts)}</span><span class="ev ${e.kind}">${e.kind}</span><span class="sym">${sym}</span><span>${esc(detail)}</span></a>`;
   }
 
+  function fitRows(log) {
+    // Keep the newest complete targets inside the terminal's existing content box.
+    const style = getComputedStyle(log);
+    let remaining = log.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    for (const row of [...log.children].reverse()) {
+      row.hidden = false;
+      const height = row.getBoundingClientRect().height;
+      row.hidden = height > remaining;
+      remaining = Math.max(0, remaining - height);
+    }
+  }
+
   async function tick(first) {
     const log = $("#scr-log");
     if (!log) return stop();
@@ -1208,13 +1248,19 @@ const Feed = (() => {
         log.insertAdjacentHTML("beforeend", fresh.map((e) => line(e, true)).join(""));
         while (log.children.length > 40) log.firstElementChild.remove();
       }
+      fitRows(log);
     } catch (e) {
       if (first) log.innerHTML = `<div class="ln"><span></span><span></span><span class="ev sell">error</span><span>${esc(errMsg(e))}</span></div>`;
     }
   }
 
-  function start() { stop(); seen = new Set(); tick(true); timer = setInterval(() => tick(false), 20000); }
-  function stop() { clearInterval(timer); timer = 0; }
+  function start() {
+    stop(); seen = new Set();
+    const log = $("#scr-log");
+    if (log) { resizeObserver = new ResizeObserver(() => fitRows(log)); resizeObserver.observe(log); }
+    tick(true); timer = setInterval(() => tick(false), 20000);
+  }
+  function stop() { clearInterval(timer); timer = 0; resizeObserver?.disconnect(); resizeObserver = null; }
   return { start, stop };
 })();
 
@@ -1704,7 +1750,7 @@ async function renderRewards(who) {
   const mine = !!account && !!addr && addr.toLowerCase() === account.toLowerCase();
   app.innerHTML = `
     <div class="hero"><div><h1>My rewards</h1>
-      <p>Your share of the 3% holder fee on every trade, across every PepesFamily token.</p></div></div>
+      <p>Holder rewards depend on each token’s fee split and are paid in IMD or ETH.</p></div></div>
     <form class="row" id="rf" style="flex-wrap:nowrap">
       <input id="ra" placeholder="Wallet address 0x…" value="${addr ? esc(addr) : ""}" spellcheck="false" autocomplete="off" aria-label="Wallet address" />
       <button type="submit">View</button>
@@ -1783,7 +1829,7 @@ async function renderRewards(who) {
           ${mine ? `<td>${r.claimable > 0n ? `<button data-claim="${i}">Claim</button>` : ""}</td>` : ""}
         </tr>`).join("")}</tbody></table>
       <p class="stat" style="margin:10px 0 0">Claiming also pays out any fees still waiting for that token, so you may receive slightly more than shown.${rows.some((r) => r.P.expiry) ? " Launchpad v4 tokens: rewards expire after more than 7 days without a claim, buy, sell or send (only what was earned in the last 7 days is kept); expired rewards go to a $PEPES buyback and burn." : ""}</p></div>`
-      : `<div class="card empty">No PepesFamily tokens in this wallet yet. Holders of any token launched here earn 3% of every trade. <a href="#/" style="color:var(--accent)">Browse tokens →</a></div>`}
+      : `<div class="card empty">No PepesFamily tokens in this wallet yet. Holder rewards depend on each token’s fee split and are paid in IMD or ETH. <a href="#/" style="color:var(--accent)">Browse tokens →</a></div>`}
     ${creatorRows.length ? `${sec(2, "Creator earnings")}
     <div class="card scroll-x"><table>
       <thead><tr><th>Token</th><th>Split</th><th>Waiting</th>${mine ? "<th></th>" : ""}</tr></thead>
@@ -2045,15 +2091,35 @@ function hydrateNfts(root) {
     el.removeAttribute("data-img");
     nftMeta(id).then((m) => { if (m.image) el.innerHTML = `<img src="${esc(m.image)}" alt="${esc(m.name)}" loading="lazy">`; }).catch(() => {});
   });
-  root.querySelectorAll("button[data-nft]").forEach((b) => (b.onclick = () => showNft(Number(b.dataset.nft))));
+  root.querySelectorAll("button[data-nft]").forEach((b) => (b.onclick = () => showNft(Number(b.dataset.nft), b)));
 }
 
-async function showNft(id) {
-  const m = document.createElement("div");
+async function showNft(id, trigger = document.activeElement) {
+  const m = document.createElement("dialog");
   m.className = "modal";
+  m.setAttribute("aria-label", `Pepes Earn IMD #${pad4(id)} details`);
+  m.setAttribute("aria-modal", "true");
+  m.setAttribute("role", "dialog");
   m.innerHTML = `<div class="card big"><div class="nbig" data-img="${id}"></div><div id="nftinfo" class="stat">Loading…</div><button type="button" data-close="1">Close</button></div>`;
-  m.onclick = (ev) => { if (ev.target === m || ev.target.closest("[data-close]")) m.remove(); };
+  const close = () => m.close();
+  m.onclick = (ev) => { if (ev.target === m || ev.target.closest("[data-close]")) close(); };
+  m.oncancel = (ev) => { ev.preventDefault(); close(); };
+  m.onclose = () => {
+    removeEventListener("hashchange", close);
+    m.remove();
+    if (trigger?.isConnected) trigger.focus();
+  };
+  m.onkeydown = (ev) => {
+    if (ev.key !== "Tab") return;
+    const controls = [...m.querySelectorAll('a[href], button:not(:disabled)')];
+    const first = controls[0], last = controls[controls.length - 1];
+    if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+    else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+  };
   document.body.appendChild(m);
+  m.showModal(); // Native modal dialogs make the rest of the document inert.
+  $("[data-close]", m).focus();
+  addEventListener("hashchange", close);
   hydrateNfts(m);
   try {
     const [meta, owner] = await Promise.all([nftMeta(id), new ethers.Contract(EARN.mirror, MIRROR_ABI, reader).ownerAt(id)]);
@@ -2121,22 +2187,9 @@ async function renderNft() {
   app.innerHTML = `
     <div class="hero"><div><h1>Pepes Earn IMD NFT</h1>
       <p>2,000 on-chain Pepes. 1 $EARN = 1 NFT. Every trade pays 3% to holders in IMD.</p></div></div>
-    <div class="stats" style="margin:0 0 6px">
-      <div class="card"><div class="k">Price per NFT</div><div class="v">${quoteUsd(q) ? fmtUsd(priceImd * quoteUsd(q)) : priceImd.toPrecision(4) + " IMD"}</div><div class="stat">${priceImd.toPrecision(4)} IMD at the pool price</div></div>
-      <div class="card"><div class="k">Minted</div><div class="v">${Number(minted).toLocaleString()} / ${EARN_TOTAL.toLocaleString()}</div><div class="stat">NFTs held in wallets</div></div>
-      <div class="card"><div class="k">Paid to holders</div><div class="v">${usd(info.totalDividendsDistributed + info.pendingHolderFees, q)}</div><div class="stat">3% of every trade, in IMD</div></div>
-      <div class="card"><div class="k">$Pepes burned</div><div class="v">${fmt(burned)}</div><div class="stat">from expired rewards · ${fmt(recycled)} IMD recycled</div></div>
-    </div>
-    <div class="two">
-      <div>
-        ${sec(1, "My NFTs")}<div id="mynfts" class="card">${account ? "Loading…" : `Connect your wallet to see your NFTs. <button class="primary" id="nftconn" style="margin-left:8px">Connect</button>`}</div>
-        ${sec(2, "Collection", `<span class="stat" id="pageinfo"></span>`)}
-        <div class="row" style="margin-bottom:10px"><button type="button" id="pgprev">‹ Prev</button><button type="button" id="pgnext">Next ›</button>
-          <span class="spacer"></span><form id="goto" class="row" style="flex-wrap:nowrap"><input id="gotoid" inputmode="numeric" placeholder="#1–2000" style="width:110px"><button type="submit">View</button></form></div>
-        <div id="browse" class="nftgrid"></div>
-      </div>
-      <div>
-        <div class="card" style="margin-top:26px">
+    <div class="two nft-layout">
+      <div class="trade-panel">
+        <div class="card nft-trade">
           <div class="tabs"><button class="buy" data-s="buy">Buy</button><button class="sell" data-s="sell">Sell</button></div>
           ${P.ethLive ? `<div class="row" style="margin-bottom:10px"><span class="stat" id="nvial">Pay with</span><span class="spacer"></span><div class="seg" id="nvia"><button type="button" data-v="eth">ETH</button><button type="button" data-v="imd">IMD</button></div></div>` : ""}
           <label for="ncount" style="margin-top:0" id="ncountl">Number of NFTs</label>
@@ -2150,6 +2203,19 @@ async function renderNft() {
         <div class="card" style="margin-top:14px"><span class="h">Your IMD rewards</span><div id="nrew" class="stat">${account ? "Loading…" : "Connect a wallet to see your rewards."}</div></div>
         ${nftAuditCard("margin-top:14px")}
         ${account ? `<div class="card" style="margin-top:14px" id="nadmin"><span class="h">Community tools</span><div class="stat">Loading…</div></div>` : ""}
+      </div>
+    <div class="stats nft-stats" style="margin:0 0 6px">
+      <div class="card"><div class="k">Price per NFT</div><div class="v">${quoteUsd(q) ? fmtUsd(priceImd * quoteUsd(q)) : priceImd.toPrecision(4) + " IMD"}</div><div class="stat">${priceImd.toPrecision(4)} IMD at the pool price</div></div>
+      <div class="card"><div class="k">Minted</div><div class="v">${Number(minted).toLocaleString()} / ${EARN_TOTAL.toLocaleString()}</div><div class="stat">NFTs held in wallets</div></div>
+      <div class="card"><div class="k">Paid to holders</div><div class="v">${usd(info.totalDividendsDistributed + info.pendingHolderFees, q)}</div><div class="stat">3% of every trade, in IMD</div></div>
+      <div class="card"><div class="k">$Pepes burned</div><div class="v">${fmt(burned)}</div><div class="stat">from expired rewards · ${fmt(recycled)} IMD recycled</div></div>
+    </div>
+      <div class="nft-collection">
+        ${sec(1, "My NFTs")}<div id="mynfts" class="card">${account ? "Loading…" : `Connect your wallet to see your NFTs. <button class="primary" id="nftconn" style="margin-left:8px">Connect</button>`}</div>
+        ${sec(2, "Collection", `<span class="stat" id="pageinfo"></span>`)}
+        <div class="row" style="margin-bottom:10px"><button type="button" id="pgprev">‹ Prev</button><button type="button" id="pgnext">Next ›</button>
+          <span class="spacer"></span><form id="goto" class="row" style="flex-wrap:nowrap"><input id="gotoid" inputmode="numeric" placeholder="#1–2000" style="width:110px"><button type="submit">View</button></form></div>
+        <div id="browse" class="nftgrid"></div>
       </div>
     </div>
     ${nftHowItWorks(3)}
@@ -2545,7 +2611,7 @@ async function renderCreate() {
       <form id="cf">
         ${sec(1, Object.keys(LAUNCHES).length > 1 ? "Chain and pair" : "Pair")}
         ${chainPicker}
-        <div class="row"><span class="pill imd">IMD</span><span class="stat">Every token is paired with $IMD. Holders earn their 3% in IMD; buyers can pay with ETH or IMD.${LAUNCH?.expiry ? " Rewards a holder leaves unclaimed for more than 7 days without activity go to a $PEPES buyback and burn." : ""}</span></div>
+        <div class="row"><span class="pill imd">IMD</span><span class="stat">Every token is paired with IMD. Buyers can pay with ETH or IMD. Choose below how the 3% is split.${LAUNCH?.expiry ? " Rewards a holder leaves unclaimed for more than 7 days without activity go to a $PEPES buyback and burn." : ""}</span></div>
         ${sec(2, "Describe")}
         <label for="n" style="margin-top:0">Name</label><input id="n" maxlength="32" required placeholder="Robin Frog" />
         <label for="s">Ticker</label><input id="s" maxlength="12" required placeholder="FROG" />
@@ -2719,7 +2785,10 @@ async function renderCreate() {
 
 // ---------------------------------------------------------------- Token page
 let tradeSide = "buy";
+let tokenSeq = 0;
 async function renderToken(addr) {
+  const seq = ++tokenSeq, generation = routeGeneration, hash = location.hash;
+  const current = () => seq === tokenSeq && generation === routeGeneration && location.hash === hash;
   if (!ethers.isAddress(addr)) return ($("#app").innerHTML = `<div class="card empty">Invalid token address</div>`);
   const app = $("#app");
   app.innerHTML = `<div class="muted">Loading…</div>`;
@@ -2727,54 +2796,41 @@ async function renderToken(addr) {
   let info, P;
   const known = TOKEN_PAD.get(addr.toLowerCase()); // try the launchpad we already know first
   for (const cand of known ? [known, ...livePads().filter((x) => x !== known)] : livePads()) {
-    try { info = await cand.v.getTokenInfo(addr); P = cand; break; } catch {}
+    try { info = await cand.v.getTokenInfo(addr); P = cand; } catch {}
+    if (!current()) return;
+    if (P) break;
   }
   if (!P) return (app.innerHTML = `<div class="card empty">Token not found on this launchpad.</div>`);
   const sp = await splitOf(P, addr).catch(() => null); // v5: where this token's 3% goes
+  if (!current()) return;
   const p = info, q = info.quote, Q = qsym(q), m = meta(info.metadata);
   const links = [["website", "Website"], ["x", "X"], ["telegram", "Telegram"]]
     .map(([k, l]) => safeUrl(m[k]) ? `<a href="${esc(safeUrl(m[k]))}" target="_blank" rel="noopener noreferrer">${l} ↗</a>` : "").filter(Boolean).join(" · ");
 
-  app.innerHTML = `
-    <div class="two">
-      <div>
-        <div class="card">
-          <div class="row" style="gap:14px;align-items:flex-start;flex-wrap:nowrap">
-            ${avatar(info, "lg")}
-            <div style="min-width:0">
-              <div class="row"><h2 style="margin:0">${esc(info.name)}</h2>${pill(q)}${chainBadge(P)}</div>
-              <div class="mono muted">$${esc(info.symbol)} · <a href="${P.ch.explorer}/token/${addr}" target="_blank" rel="noopener">${short(addr)} ↗</a></div>
+  const tokenDetails = `
               <div class="stat">Created by <a class="mono" href="${P.ch.explorer}/address/${p.creator}" target="_blank" rel="noopener">${short(p.creator)}</a> · ${ago(p.createdAt)} · ${P.nft ? `<a href="#/nft" style="text-decoration:underline">Pepes Earn IMD NFT</a>` : `launchpad v${P.version} on ${esc(P.ch.name)}`}</div>
               ${links ? `<div class="links">${links}</div>` : ""}
               <div class="row ext" style="margin-top:8px">
                 <a class="btn" href="https://gmgn.ai/${P.ch.gmgn}/token/${addr}" target="_blank" rel="noopener noreferrer">GMGN ↗</a>
                 <a class="btn" href="https://dexscreener.com/${P.ch.dex}/${addr}" target="_blank" rel="noopener noreferrer">DexScreener ↗</a>
                 ${((a) => `<a class="btn" href="${a.url}" target="_blank" rel="noopener noreferrer" title="${esc(a.result)}">Audit ↗</a>`)(CONFIG.audits.tokens[addr.toLowerCase()] || (P.split ? CONFIG.audits.launchpadV5 : P.expiry ? CONFIG.audits.launchpadV4 : CONFIG.audits.launchpad))}
-              </div>
+              </div>`;
+
+  app.innerHTML = `
+    <div class="two token-layout">
+        <div class="card token-identity">
+          <div class="row" style="gap:14px;align-items:flex-start;flex-wrap:nowrap">
+            ${avatar(info, "lg")}
+            <div style="min-width:0">
+              <div class="row"><h2 style="margin:0">${esc(info.name)}</h2>${pill(q)}${chainBadge(P)}</div>
+              <div class="mono muted">$${esc(info.symbol)} · <a href="${P.ch.explorer}/token/${addr}" target="_blank" rel="noopener">${short(addr)} ↗</a></div>
+              <div class="token-meta">${tokenDetails}</div>
             </div>
           </div>
           ${m.description ? `<p class="desc">${esc(m.description)}</p>` : ""}
         </div>
-        <div class="stats q">
-          <div class="card"><div class="k">Market cap</div><div class="v">${usd(info.marketCap, q)}</div><div class="stat">${fmt(info.marketCap)} ${Q}</div></div>
-          <div class="card"><div class="k">Price</div><div class="v">${quoteUsd(q) ? fmtUsd(priceOf(info.sqrtPriceX96, info.quoteIsCurrency0) * quoteUsd(q)) : priceOf(info.sqrtPriceX96, info.quoteIsCurrency0).toPrecision(4) + " " + Q}</div></div>
-          <div class="card"><div class="k">Liquidity</div><div class="v">Locked forever</div></div>
-          <div class="card"><div class="k">Earned by holders</div><div class="v">${usd(info.totalDividendsDistributed + info.pendingHolderFees, q)}</div><div class="stat">paid in ${Q}</div></div>
-        </div>
-        ${sp ? `<div class="card" style="margin-top:14px" id="v5box"><span class="h">Fee split · ${esc(splitLabel(sp))}</span>
-          <div class="stat">Every trade pays 4%: ${esc(feeText(sp))}. Chosen at launch, fixed forever.</div><div id="v5detail" class="stat" style="margin-top:8px">Loading…</div></div>` : ""}
-        <div class="card" style="margin-top:14px">
-          <div class="row"><span class="h" style="margin:0">Price</span><span class="spacer"></span><span class="stat">USD per token</span></div>
-          <svg class="chart" id="chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
-        </div>
-        <div class="card" style="margin-top:14px">
-          <span class="h">Trades</span>
-          <div class="scroll-x"><table><thead><tr><th>Type</th><th>Trader</th><th>Value</th><th>Tokens</th><th>Tx</th></tr></thead>
-          <tbody id="trades"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
-        </div>
-      </div>
 
-      <div>
+      <div class="trade-panel">
         <div class="card">
           <div class="tabs"><button class="buy" data-s="buy">Buy</button><button class="sell" data-s="sell">Sell</button></div>
           ${q !== ZERO ? `<div class="row" style="margin-bottom:10px"><span class="stat" id="vial">Pay with</span><span class="spacer"></span><div class="seg" id="via"><button type="button" data-v="eth">ETH</button><button type="button" data-v="imd">IMD</button></div></div>` : ""}
@@ -2794,15 +2850,36 @@ async function renderToken(addr) {
           <a class="stat" href="#/rewards" style="display:block;margin-top:10px;text-decoration:underline;text-underline-offset:3px">All my rewards →</a>
         </div>
       </div>
+      <div class="token-details">
+        <div class="card mobile-token-about">${tokenDetails}${m.description ? `<p class="desc">${esc(m.description)}</p>` : ""}</div>
+        <div class="stats q">
+          <div class="card"><div class="k">Market cap</div><div class="v">${usd(info.marketCap, q)}</div><div class="stat">${fmt(info.marketCap)} ${Q}</div></div>
+          <div class="card"><div class="k">Price</div><div class="v">${quoteUsd(q) ? fmtUsd(priceOf(info.sqrtPriceX96, info.quoteIsCurrency0) * quoteUsd(q)) : priceOf(info.sqrtPriceX96, info.quoteIsCurrency0).toPrecision(4) + " " + Q}</div></div>
+          <div class="card"><div class="k">Liquidity</div><div class="v">Locked forever</div></div>
+          <div class="card"><div class="k">Earned by holders</div><div class="v">${usd(info.totalDividendsDistributed + info.pendingHolderFees, q)}</div><div class="stat">paid in ${Q}</div></div>
+        </div>
+        ${sp ? `<div class="card" style="margin-top:14px" id="v5box"><span class="h">Fee split · ${esc(splitLabel(sp))}</span>
+          <div class="stat">Every trade pays 4%: ${esc(feeText(sp))}. Chosen at launch, fixed forever.</div><div id="v5detail" class="stat" style="margin-top:8px">Loading…</div></div>` : ""}
+        <div class="card" style="margin-top:14px">
+          <div class="row"><span class="h" style="margin:0">Price</span><span class="spacer"></span><span class="stat">USD per token</span></div>
+          <svg class="chart" id="chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <span class="h">Trades</span>
+          <div class="scroll-x"><table><thead><tr><th>Type</th><th>Trader</th><th>Value</th><th>Tokens</th><th>Tx</th></tr></thead>
+          <tbody id="trades"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
+        </div>
+      </div>
     </div>`;
 
   const routerW = () => new ethers.Contract(P.router, ROUTER_ABI, signer);
   // v5: burned tokens and creator earnings, with the creator's buttons
   async function loadV5() {
-    if (!sp || !$("#v5detail")) return;
+    if (!current() || !sp || !$("#v5detail")) return;
     const [pend, payout, proposed, burned, pendBurn] = await Promise.all([
       P.c.pendingCreatorFees(addr), P.c.creatorPayout(addr), P.c.pendingCreatorPayout(addr), P.c.totalBurned(addr), P.c.pendingBurn(addr),
     ]);
+    if (!current()) return;
     const me = account?.toLowerCase();
     const isPayout = me && payout.toLowerCase() === me, isProposed = me && proposed.toLowerCase() === me;
     $("#v5detail").innerHTML = `
@@ -2826,7 +2903,7 @@ async function renderToken(addr) {
       return w.setCreatorPayout(addr, ethers.getAddress(to));
     }, "Proposed: the new address must accept");
   }
-  loadV5().catch(() => { if ($("#v5detail")) $("#v5detail").textContent = "Couldn't load the split details."; });
+  loadV5().catch(() => { if (current() && $("#v5detail")) $("#v5detail").textContent = "Couldn't load the split details."; });
   const tokR = new ethers.Contract(addr, TOKEN_ABI, P.ch.reader);
   let tokBal = 0n, quoteBal = 0n, ethBal = 0n;
   // IMD pairs can be traded with ETH through PepesFamilyEthRouter (ETH <-> IMD <-> token in one tx).
@@ -2837,7 +2914,7 @@ async function renderToken(addr) {
   const ethRouterW = () => new ethers.Contract(P.ethRouter, ETH_ROUTER_ABI, signer);
 
   async function loadPosition() {
-    if (!account) return;
+    if (!current() || !account) return;
     const qBalP = q === ZERO ? P.ch.reader.getBalance(account) : new ethers.Contract(q, ERC20_ABI, P.ch.reader).balanceOf(account);
     const [b, d, wd, qb, eb] = await Promise.all([tokR.balanceOf(account), tokR.withdrawableDividendOf(account), tokR.withdrawnDividends(account), qBalP, P.ch.reader.getBalance(account)]);
     // withdrawnDividends also counts rewards that expired and were sent away; those weren't claimed
@@ -2846,6 +2923,7 @@ async function renderToken(addr) {
     tokBal = b; quoteBal = qb; ethBal = eb;
     const share = Number((b * 1000000n) / SUPPLY) / 10000;
     const ex = P.expiry && d > 0n ? await expiryOf(addr, account, P.ch) : null;
+    if (!current()) return;
     const ready = ex ? d - ex.expired : d;
     $("#pos").innerHTML = `Holding <b>${fmt(b)}</b> $${esc(info.symbol)} (${share}% of supply)<br/>
       Claimable: <b>${fmt(ready, 6)} ${Q}</b> · Claimed so far: ${fmt(w, 6)} ${Q}${lostR === null ? " (may include expired rewards)" : lostR > 0n ? ` · ${fmt(lostR, 6)} ${Q} expired earlier` : ""}${ex ? `<br/>${ex.left === null ? "" : ex.left > 0 ? `⏳ Claim within <b>${dur(ex.left)}</b> to keep all of it.` : "⏳ Your older rewards are expiring: claim now to keep the rest."}${ex.expired > 0n ? ` ${fmt(ex.expired, 6)} ${Q} already expired (goes to the $PEPES buyback).` : ""}` : ""}`;
@@ -2854,6 +2932,7 @@ async function renderToken(addr) {
   }
 
   function setSide(s) {
+    if (!current()) return;
     tradeSide = s;
     app.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.s === s));
     const buying = s === "buy";
@@ -2877,6 +2956,7 @@ async function renderToken(addr) {
 
   let pvSeq = 0;
   async function preview() {
+    if (!current()) return;
     const seq = ++pvSeq;
     let amt = 0n; try { amt = ethers.parseUnits($("#amt").value.trim() || "0", 18); } catch {}
     if (!amt) return ($("#pv").innerHTML = "&nbsp;");
@@ -2885,8 +2965,8 @@ async function renderToken(addr) {
       const out = q !== ZERO && viaEth
         ? await quoteSwapEth(P, addr, info.quoteIsCurrency0, buying, amt)
         : await quoteSwap(P, addr, info.quoteIsCurrency0, buying, amt);
-      if (seq === pvSeq) $("#pv").textContent = `You receive ≈ ${fmt(out, 6)} ${buying ? "$" + info.symbol : payUnit()}`;
-    } catch (e) { if (seq === pvSeq) $("#pv").textContent = "Can't quote this amount"; }
+      if (current() && seq === pvSeq) $("#pv").textContent = `You receive ≈ ${fmt(out, 6)} ${buying ? "$" + info.symbol : payUnit()}`;
+    } catch (e) { if (current() && seq === pvSeq) $("#pv").textContent = "Can't quote this amount"; }
   }
   $("#amt").oninput = preview;
 
@@ -2894,6 +2974,7 @@ async function renderToken(addr) {
     const btn = $("#trade"); btn.disabled = true;
     try {
       await requireWallet(P.ch);
+      if (!current()) return;
       const amt = ethers.parseUnits($("#amt").value.trim() || "0", 18);
       if (!amt) throw new Error("Enter an amount");
       const slipBps = Math.round(Math.min(50, Math.max(0, parseFloat($("#slip").value) || 0)) * 100);
@@ -2930,7 +3011,7 @@ async function renderToken(addr) {
       toast("Transaction sent…", 15000);
       await tx.wait();
       toast(tradeSide === "buy" ? "Bought" : "Sold");
-      renderToken(addr);
+      if (current()) renderToken(addr);
     } catch (e) { toast(errMsg(e), 7000); }
     btn.disabled = false;
   };
@@ -2948,7 +3029,7 @@ async function renderToken(addr) {
 
   setSide(tradeSide);
   loadPosition().catch(() => {});
-  loadTrades(P, addr, info).catch((e) => ($("#trades").innerHTML = `<tr><td colspan="5" class="muted">${esc(errMsg(e))}</td></tr>`));
+  loadTrades(P, addr, info, current).catch((e) => { if (current()) $("#trades").innerHTML = `<tr><td colspan="5" class="muted">${esc(errMsg(e))}</td></tr>`; });
 }
 
 /// Trade logs for `addr`, oldest first. Blockscout's API has full history and CORS; the RPC is a fallback
@@ -2986,8 +3067,9 @@ async function fetchTradeLogs(P, addr, createdBlock) {
   }
 }
 
-async function loadTrades(P, addr, info) {
+async function loadTrades(P, addr, info, current) {
   const trades = await fetchTradeLogs(P, addr, info.createdBlock);
+  if (!current()) return;
   $("#trades").innerHTML = trades.length ? trades.slice(-50).reverse().map((t) => `
     <tr><td class="${t.isBuy ? "b" : "s"}">${t.isBuy ? "Buy" : "Sell"}</td>
     <td class="mono"><a href="${P.ch.explorer}/address/${t.trader}" target="_blank" rel="noopener">${short(t.trader)}</a></td>

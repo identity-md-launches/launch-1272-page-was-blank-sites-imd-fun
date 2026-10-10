@@ -1,6 +1,6 @@
 # PepesFamily implemented design
 
-This is the design of the delivered static HTML/JavaScript site, not a proposed redesign. `web/index.html` contains the launchpad's styles, templates and hash routing; `web/world/index.html` contains the separate three.js game. The CSP repair retains the existing terminal, frog artwork, flat panels and wallet flows. The homepage now introduces the product and its launch action before the decorative scene and asynchronous token cards.
+This is the design of the delivered static HTML/JavaScript site, not a proposed redesign. `web/index.html` contains the launchpad's styles, templates and hash routing; `web/world/index.html` contains the separate three.js game. The CSP repair retains the existing terminal, frog artwork, flat panels and wallet flows. The homepage introduces the product and its launch action before the decorative scene and asynchronous token cards. The revision brings the existing token and NFT trade cards onto the first phone screen, retains their desktop columns, and repairs the reported focus, motion, contrast and recovery states.
 
 ## Colors
 
@@ -21,7 +21,7 @@ The launchpad uses semantic CSS custom properties in `web/index.html:28`. Keep t
 | `--warn` | `#b8860b` | `#f5c542` | Expiry and caution |
 | `--frame` | `#e8e8e5` | `#1c221c` | Terminal surround |
 
-The terminal and exported reward cards deliberately retain a dark background in either theme. Their illustrations use local colors rather than the page palette. Measured normal text against the opaque page background is 21:1 in both themes; supporting text is 5.74:1 light and 6.25:1 dark. These measurements do not cover every status color, illustration or overlay.
+The terminal and exported reward cards deliberately retain a dark background in either theme. Their illustrations use local colors rather than the page palette. Measured normal text against the opaque page background is 21:1 in both themes; supporting text is 5.74:1 light and 6.25:1 dark. Ethereum `.pill.chain` labels now use `--text`, keeping their border and network name; the measured light-theme label/card contrast is 21:1 (previously 4.19:1). These measurements do not cover every status color, illustration or overlay.
 
 World has a separate fixed palette at `web/world/index.html:22`: sky `#a8dcc9`, ink `#000000`, paper `#ffffff`, muted `#666666`, line `#dcdcdc`, accent `#0a8f3c`, gold `#c99a06`, down `#d23c3c`. It has no theme switch.
 
@@ -37,15 +37,15 @@ Buttons/navigation use uppercase presentation and `.06em` tracking. The logo use
 
 The launchpad's `.wrap` caps content at 1120px with 16px horizontal padding. Reuse `.row` (8px gap, wrapping), `.card` (16px padding), `.grid` (auto-fill columns of at least 260px), and `.two` (flexible content plus 360px sidebar, 18px gap). Numbered sections separate groups with 26px above and 14px below; the hero uses a 16px gap and 26px bottom margin. `.wrap` wins the main element's horizontal padding in the cascade; do not infer a 30px top inset from the lower-specificity `main` rule.
 
-At 860px and below, the header places navigation on its own row and hides the long NFT label. The `.two` and `.sharegrid` layouts become one column. At 600px and below, headings/fields adapt, featured token actions become full width, and the terminal hides its secondary columns. At 360px and below, the logo keeps only its mark and navigation gets denser. The sort/filter bar wraps instead of widening the document. Rewards tables have their own horizontal scroll container; the fixed status bar scrolls independently.
+At 860px and below, the header places navigation on its own row and hides the long NFT label. The `.two` and `.sharegrid` layouts become one column. `.token-layout` places identity, the existing trade/rewards panel, then information in that order, with a 16px gap. Creator details, external links and description move below trading on phones; their desktop copies retain the original location and the inactive copies use `display:none`. `.nft-layout` puts the trade panel immediately after the page title, then statistics and collection; its 26px desktop trade-card top margin becomes zero. Both use explicit grid areas so the desktop 360px sidebar remains intact, without reserving blank mobile grid rows. At 600px and below, headings/fields adapt, featured token actions become full width, and the terminal hides its secondary columns. At 360px and below, the logo keeps only its mark and navigation gets denser. The sort/filter bar wraps instead of widening the document. Rewards tables have their own horizontal scroll container; the fixed status bar scrolls independently.
 
-The homepage's launch action remains above the scene and loaded token cards. This was verified at widths 320, 390, 601, 768, 860, 1024 and 1440, all at 844px height. At 390px its bottom was about 210px from the viewport top in the fixture run. Share controls stack below the 1200:675 card preview on mobile.
+The homepage's launch action remains above the scene and loaded token cards. This was verified at widths 320, 390, 601, 768, 860, 1024 and 1440, all at 844px height. At 390px its bottom was about 231px from the viewport top in the latest fixture run. Token/NFT layouts also reflowed at 320, 390, 768, 860 and 1440px. Real read-only token data put Buy at y=575–613px at 390×844 and y=564–601px at 320×700; NFT Buy was y=469–506px at 390×844. Share controls stack below the 1200:675 card preview on mobile.
 
-World fills the viewport with WebGL. The access card is `min(460px, 100%)`, inset 16px, padded 22px, with internal scrolling beyond `100vh - 32px`. At 600px and below the HUD hides the expanded logo/help and moves the bag above the joystick. The gate was checked at 320, 390, 768 and 1440px; authenticated gameplay was not exercised.
+World fills the viewport with WebGL. The access card is `min(460px, 100%)`, inset 16px, padded 22px, with internal scrolling beyond `100vh - 32px`. At 600px and below the HUD hides the expanded logo/help and moves the bag above the joystick. The gate was checked at 320, 390, 768 and 1440px; authenticated gameplay was not exercised. `motionPreference` in the update loop reads the current reduced-motion preference each frame: the gate world and decorative clouds stay fixed under reduce, including after preference changes. Intentional gameplay movement remains in its existing code path.
 
 ## Elevation and depth
 
-The launchpad is intentionally flat: 1px separators and 1.5px featured outlines carry structure. Selected fee presets add a 1px inset shadow. The sticky header sits at z-index 5, status bar at 6, toast at 20 and existing modal layer at 30 over a 60% black scrim. World places its gate at z-index 10 over labels/HUD at 4/5.
+The launchpad is intentionally flat: 1px separators and 1.5px featured outlines carry structure. Selected fee presets add a 1px inset shadow. The sticky header sits at z-index 5, status bar at 6, toast at 20 and wallet modal layer at 30 over a 60% black scrim. NFT details use the browser top layer through a native `dialog`, retaining the same 60% scrim via `::backdrop`, card width, square borders and scroll containment. World places its gate at z-index 10 over labels/HUD at 4/5.
 
 ## Shapes
 
@@ -60,13 +60,15 @@ The launchpad forces square corners. Buttons, panels, avatars and the brand mark
 | `nav.top`, `.seg`, `.tabs` | Hash navigation, chain/sort filters and trade selection. Existing `.on` classes invert foreground/background. |
 | `input`, `textarea`, labels — `web/index.html:101` | Full-width fields with structural borders, visible focus, and 16px mobile input text. Native required fields remain intact. |
 | `.card`, `.tcard`, `.stats`, `.pill` | Reusable dense token cards, linked rows, metrics and chain/asset labels. Loading and empty states are produced by the existing render functions. |
-| `.sharegrid`, `.share-img`, `showCard` — `web/index.html:1799` | Rewards selector, PNG preview, Post on X, Download, Copy and capability-dependent Share. Download remains available if copying is denied. The image contains totals/token information, not the wallet address. |
+| `.sharegrid`, `.share-img`, `showCard` — `web/index.html:1845` | Rewards selector, PNG preview, Post on X, Download, Copy and capability-dependent Share. Download remains available if copying is denied. The image contains totals/token information, not the wallet address. |
 | `shareImageBlob` — `web/share-image.js:7` | Typed local PNG decoding shared by Copy and Share. No network request or expanded `connect-src` permission. |
-| `.toast`, `toast()` — `web/index.html:162` | Existing timed feedback, now a polite status region. Copy success and denial guidance were checked; actual screen-reader announcements were not. |
-| `.scene`, `Scene`, `Feed` | Procedural home wall/frog crowd and read-only feed. Home motion has a reduced-motion guard; this is separate from World. |
+| `.toast`, `toast()` — `web/index.html:179` | Existing timed feedback, now a polite status region. Copy success and denial guidance were checked; actual screen-reader announcements were not. |
+| `.scene`, `Scene`, `Feed` | Procedural home wall/frog crowd and read-only feed. Home motion has a reduced-motion guard. Feed rows have `min-height:24px`, cannot shrink, and `fitRows` hides older rows that do not fit completely. A `ResizeObserver` refits retained rows within the same terminal height. |
+| `showNft`, `dialog.modal` — `web/index.html:2097` | Named native modal with initial Close focus, contained Tab/Shift+Tab, inert background, Escape/Close/backdrop dismissal and focus return to the triggering tile. Route changes close it too. |
+| `loadPads`, `renderSetup` — `web/index.html:608` | Failed deployment reads get a chain-unavailable message and Reload. Successful empty-code responses retain the undeployed state. |
 | `.box`, `.btn`, `#gate` — `web/world/index.html:33` | Fixed light access card over the game, connect/error states and relative home navigation. |
 
-These are shared CSS/template patterns, not framework exports. Existing wallet/NFT overlays and game gesture handling have wider accessibility limitations listed in the validation report.
+These are shared CSS/template patterns, not framework exports. The NFT dialog was exercised with keyboard navigation and all three dismissal paths. The unchanged wallet chooser and game gesture handling have wider accessibility limitations listed in the validation report.
 
 ## Reuse rules
 
